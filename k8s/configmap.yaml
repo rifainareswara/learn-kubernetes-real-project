@@ -1,0 +1,40 @@
+# =============================================================================
+# ConfigMap — Konfigurasi Non-Sensitif
+# =============================================================================
+#
+# 📝 PENJELASAN:
+# ConfigMap menyimpan konfigurasi yang TIDAK rahasia.
+# Data di ConfigMap bisa dilihat siapa saja yang punya akses ke cluster.
+#
+# Jangan simpan password, secret key, atau data sensitif di sini!
+# Untuk data sensitif, gunakan Secret (lihat secret.yaml).
+#
+# ConfigMap di-inject ke container sebagai environment variables.
+#
+# Apply:  kubectl apply -f k8s/configmap.yaml
+# Cek:    kubectl get configmap -n taskmanager
+# Detail: kubectl describe configmap taskmanager-config -n taskmanager
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: taskmanager-config
+  namespace: taskmanager
+  labels:
+    app: taskmanager
+data:
+  # ── Server Config ──────────────────────────────────────────────────────
+  # HOST dan PORT untuk Rust Axum server
+  HOST: "0.0.0.0"
+  PORT: "3000"
+
+  # ── Logging ────────────────────────────────────────────────────────────
+  # Level: error < warn < info < debug < trace
+  # Format: crate_name=level
+  RUST_LOG: "taskmanager_api=info,tower_http=info"
+
+  # ── Database Config (non-sensitive parts) ──────────────────────────────
+  # Nama database dan host (password ada di Secret)
+  DB_HOST: "postgres-service"
+  DB_PORT: "5432"
+  DB_NAME: "taskmanager"

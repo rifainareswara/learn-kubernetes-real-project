@@ -1,0 +1,22 @@
+# =============================================================================
+# Namespace — Isolasi Resource
+# =============================================================================
+#
+# 📝 PENJELASAN:
+# Namespace seperti "folder" di Kubernetes. Semua resource kita akan
+# diletakkan di namespace "taskmanager" agar terpisah dari resource lain.
+#
+# Analoginya: namespace = project folder di laptop kamu.
+# Tanpa namespace, semua resource campur jadi satu di "default".
+#
+# Apply:  kubectl apply -f k8s/namespace.yaml
+# Cek:    kubectl get namespaces
+# =============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: taskmanager
+  labels:
+    app: taskmanager
+    # Label ini berguna untuk filtering dan organizing
+    environment: development

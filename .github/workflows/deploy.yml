@@ -1,0 +1,149 @@
+# =============================================================================
+# GitHub Actions — CI/CD Pipeline untuk GKE
+# =============================================================================
+#
+# 📝 PENJELASAN:
+# Pipeline ini otomatis berjalan saat push ke branch main:
+#   1. Build Docker images (backend + frontend)
+#   2. Push ke Google Artifact Registry
+#   3. Deploy ke GKE cluster
+#
+# ── Setup yang Dibutuhkan ──────────────────────────────────────────────────
+# 1. Buat Service Account di GCP:
+#      gcloud iam service-accounts create github-deployer
+#
+# 2. Berikan permissions:
+#      gcloud projects add-iam-policy-binding PROJECT_ID \
+#        --member="serviceAccount:github-deployer@PROJECT_ID.iam.gserviceaccount.com" \
+#        --role="roles/container.developer"
+#      gcloud projects add-iam-policy-binding PROJECT_ID \
+#        --member="serviceAccount:github-deployer@PROJECT_ID.iam.gserviceaccount.com" \
+#        --role="roles/artifactregistry.writer"
+#
+# 3. Buat Workload Identity Federation (recommended) atau key JSON
+#
+# 4. Set GitHub Secrets:
+#      GCP_PROJECT_ID      : ID project GCP
+#      GCP_SA_KEY           : Service Account JSON key (base64)
+#      GKE_CLUSTER_NAME    : Nama GKE cluster
+#      GKE_CLUSTER_ZONE    : Zone/region cluster
+# =============================================================================
+
+name: Build & Deploy to GKE
+
+on:
+  push:
+    branches: [main]
+  # Manual trigger
+  workflow_dispatch:
+
+env:
+  # ⚠️ GANTI dengan konfigurasi kamu!
+  GCP_REGION: asia-southeast2
+  ARTIFACT_REGISTRY: asia-southeast2-docker.pkg.dev
+  REPOSITORY: taskmanager
+
+jobs:
+  # ── Job 1: Build & Push Images ──────────────────────────────────────────
+  build:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker ${{ env.ARTIFACT_REGISTRY }}
+
+      - name: Build & Push Backend Image
+        run: |
+          docker build -t ${{ env.ARTIFACT_REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/backend:${{ github.sha }} \
+                        -t ${{ env.ARTIFACT_REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/backend:latest \
+                        ./backend
+          docker push ${{ env.ARTIFACT_REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/backend --all-tags
+
+      - name: Build & Push Frontend Image
+        run: |
+          docker build -t ${{ env.ARTIFACT_REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/frontend:${{ github.sha }} \
+                        -t ${{ env.ARTIFACT_REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/frontend:latest \
+                        ./frontend
+          docker push ${{ env.ARTIFACT_REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/frontend --all-tags
+
+  # ── Job 2: Deploy to GKE ───────────────────────────────────────────────
+  deploy:
+    name: Deploy to GKE
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
+          location: ${{ secrets.GKE_CLUSTER_ZONE }}
+
+      - name: Update image tags in manifests
+        run: |
+          # Replace placeholder image paths with actual Artifact Registry paths
+          find k8s/ -name '*.yaml' -exec sed -i \
+            "s|REGION-docker.pkg.dev/PROJECT_ID/taskmanager|${{ env.ARTIFACT_REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}|g" {} +
+
+          # Update image tags to specific commit SHA
+          sed -i "s|backend:latest|backend:${{ github.sha }}|g" k8s/backend-deployment.yaml
+          sed -i "s|frontend:latest|frontend:${{ github.sha }}|g" k8s/frontend-deployment.yaml
+
+      - name: Deploy to GKE
+        run: |
+          # Apply in order: namespace → config → database → app → networking
+          kubectl apply -f k8s/namespace.yaml
+          kubectl apply -f k8s/configmap.yaml
+          kubectl apply -f k8s/secret.yaml
+          kubectl apply -f k8s/postgres-statefulset.yaml
+          kubectl apply -f k8s/postgres-service.yaml
+
+          # Wait for PostgreSQL to be ready
+          kubectl rollout status statefulset/postgres -n taskmanager --timeout=120s
+
+          kubectl apply -f k8s/backend-deployment.yaml
+          kubectl apply -f k8s/backend-service.yaml
+          kubectl apply -f k8s/frontend-deployment.yaml
+          kubectl apply -f k8s/frontend-service.yaml
+          kubectl apply -f k8s/ingress.yaml
+          kubectl apply -f k8s/hpa.yaml
+          kubectl apply -f k8s/network-policy.yaml
+
+      - name: Verify deployment
+        run: |
+          kubectl rollout status deployment/backend -n taskmanager --timeout=120s
+          kubectl rollout status deployment/frontend -n taskmanager --timeout=120s
+          echo "✅ Deployment successful!"
+          echo ""
+          echo "📊 Pod Status:"
+          kubectl get pods -n taskmanager
+          echo ""
+          echo "🌐 Ingress IP:"
+          kubectl get ingress -n taskmanager

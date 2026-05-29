@@ -1,0 +1,82 @@
+[package]
+name = "taskmanager-api"
+version = "0.1.0"
+edition = "2021"
+description = "Task Management API — Rust Axum + PostgreSQL (Kubernetes Real Project)"
+
+# ==============================================================================
+# DEPENDENCY GUIDE
+# ==============================================================================
+# Setiap dependency di bawah ini dikelompokkan berdasarkan fungsinya.
+# Kamu bisa menambahkan dependency baru dengan:
+#   cargo add <nama_crate>
+#   cargo add <nama_crate> --features <feature1>,<feature2>
+# ==============================================================================
+
+[dependencies]
+# ── Web Framework ─────────────────────────────────────────────────────────────
+# axum   : Framework HTTP async dari tim Tokio. Ringan dan type-safe.
+# tokio  : Async runtime. Axum butuh ini untuk menjalankan async code.
+# tower  : Abstraksi middleware yang dipakai Axum di belakang layar.
+# tower-http : Kumpulan middleware siap pakai (CORS, logging, timeout).
+axum = { version = "0.8", features = ["macros"] }
+tokio = { version = "1", features = ["full"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace", "timeout"] }
+
+# ── Serialization ─────────────────────────────────────────────────────────────
+# serde      : Framework serialize/deserialize. Derive macro untuk auto-generate.
+# serde_json : Implementasi JSON untuk serde. Juga menyediakan json!() macro.
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# ── Database ──────────────────────────────────────────────────────────────────
+# sqlx : Async database driver + query builder.
+#   - runtime-tokio : Pakai Tokio sebagai async runtime
+#   - tls-rustls    : TLS support via rustls (pure Rust, tanpa OpenSSL)
+#   - postgres      : PostgreSQL driver
+#   - uuid          : Support tipe UUID dari PostgreSQL
+#   - chrono        : Support tipe TIMESTAMPTZ → chrono::DateTime<Utc>
+#   - migrate       : Support database migrations (sqlx::migrate! macro)
+sqlx = { version = "0.8", features = [
+    "runtime-tokio",
+    "tls-rustls",
+    "postgres",
+    "uuid",
+    "chrono",
+    "migrate",
+] }
+
+# ── Authentication ────────────────────────────────────────────────────────────
+# jsonwebtoken : Library untuk membuat & memverifikasi JWT token.
+# argon2       : Password hashing algorithm (lebih aman dari bcrypt).
+jsonwebtoken = "9"
+argon2 = "0.5"
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+# uuid      : Tipe UUID v4 untuk primary key.
+# chrono    : Library untuk waktu & tanggal.
+# dotenvy   : Load file .env ke environment variables.
+# thiserror : Derive macro untuk membuat custom Error types.
+# validator : Validasi input (email, length, range, dll).
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+dotenvy = "0.15"
+thiserror = "2"
+validator = { version = "0.19", features = ["derive"] }
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+# tracing            : API untuk structured logging & tracing.
+# tracing-subscriber : Konfigurasi output log (format, filter level, dll).
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# ── API Documentation ────────────────────────────────────────────────────────
+# utoipa            : Generate OpenAPI spec dari code (derive macro).
+# utoipa-swagger-ui : Serve Swagger UI untuk testing API di browser.
+utoipa = { version = "5", features = ["axum_extras", "uuid", "chrono"] }
+utoipa-swagger-ui = { version = "9", features = ["axum"] }
+
+[dev-dependencies]
+# Untuk integration testing
+reqwest = { version = "0.12", features = ["json"] }

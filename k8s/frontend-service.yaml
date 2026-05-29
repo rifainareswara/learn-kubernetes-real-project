@@ -1,0 +1,21 @@
+# =============================================================================
+# Frontend Service — ClusterIP
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: taskmanager
+  labels:
+    app: taskmanager
+    component: frontend
+spec:
+  type: ClusterIP
+  selector:
+    app: taskmanager
+    component: frontend
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+      name: http

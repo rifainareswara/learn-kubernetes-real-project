@@ -1,0 +1,70 @@
+# =============================================================================
+# HPA — Horizontal Pod Autoscaler
+# =============================================================================
+#
+# 📝 PENJELASAN:
+# HPA otomatis menambah/mengurangi jumlah pod berdasarkan metrics.
+#
+# Cara kerjanya:
+#   1. HPA monitor CPU usage setiap pod
+#   2. Kalau rata-rata CPU > 70% → tambah pod (scale up)
+#   3. Kalau rata-rata CPU < 70% → kurangi pod (scale down)
+#   4. Jumlah pod dijaga antara min (2) dan max (10)
+#
+# Contoh:
+#   - 2 pod, CPU 80% → scale up ke 3 pod
+#   - 3 pod, CPU 30% → scale down ke 2 pod
+#   - Traffic spike → scale up sampai max 10 pod
+#   - Traffic turun → scale down ke min 2 pod
+#
+# Apply:  kubectl apply -f k8s/hpa.yaml
+# Cek:    kubectl get hpa -n taskmanager
+# Watch:  kubectl get hpa -n taskmanager --watch
+# =============================================================================
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: backend-hpa
+  namespace: taskmanager
+  labels:
+    app: taskmanager
+    component: backend
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backend
+  # ── Min/Max Replicas ───────────────────────────────────────────────────
+  minReplicas: 2
+  maxReplicas: 10
+  # ── Metrics ────────────────────────────────────────────────────────────
+  metrics:
+    # Scale berdasarkan CPU usage
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70  # Target 70% CPU
+    # Scale berdasarkan Memory usage
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80  # Target 80% Memory
+  # ── Behavior ───────────────────────────────────────────────────────────
+  # Kontrol seberapa cepat scale up/down
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60   # Tunggu 1 menit sebelum scale up
+      policies:
+        - type: Pods
+          value: 2                      # Tambah max 2 pod sekaligus
+          periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300  # Tunggu 5 menit sebelum scale down
+      policies:
+        - type: Pods
+          value: 1                      # Kurangi max 1 pod sekaligus
+          periodSeconds: 120

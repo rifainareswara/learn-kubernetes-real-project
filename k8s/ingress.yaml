@@ -1,0 +1,90 @@
+# =============================================================================
+# Ingress — HTTP Routing dari Internet ke Services
+# =============================================================================
+#
+# 📝 PENJELASAN:
+# Ingress adalah "pintu masuk" dari internet ke cluster Kubernetes.
+# Tanpa Ingress, service hanya bisa diakses dari dalam cluster.
+#
+# Ingress bekerja seperti Nginx reverse proxy, tapi dikelola Kubernetes:
+#
+#   Internet
+#      │
+#   ┌──┴──────────────────────────────────────────┐
+#   │              Ingress Controller               │
+#   │  ┌─────────────────────────────────────────┐ │
+#   │  │ Rules:                                   │ │
+#   │  │   /          → frontend-service:80       │ │
+#   │  │   /api/*     → backend-service:3000      │ │
+#   │  │   /health    → backend-service:3000      │ │
+#   │  │   /swagger-* → backend-service:3000      │ │
+#   │  └─────────────────────────────────────────┘ │
+#   └──────────────────────────────────────────────┘
+#
+# Di GKE, Ingress otomatis membuat Google Cloud Load Balancer.
+#
+# Apply:  kubectl apply -f k8s/ingress.yaml
+# Cek:    kubectl get ingress -n taskmanager
+# IP:     kubectl get ingress -n taskmanager -o jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}'
+# =============================================================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: taskmanager-ingress
+  namespace: taskmanager
+  labels:
+    app: taskmanager
+  annotations:
+    # GKE: gunakan Google Cloud Load Balancer
+    kubernetes.io/ingress.class: "gce"
+    # (Opsional) Redirect HTTP ke HTTPS
+    # kubernetes.io/ingress.allow-http: "false"
+spec:
+  # ── Routing Rules ──────────────────────────────────────────────────────
+  rules:
+    - http:
+        paths:
+          # API routes → Backend Service
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 3000
+
+          # Health check → Backend Service
+          - path: /health
+            pathType: Exact
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 3000
+
+          # Swagger UI → Backend Service
+          - path: /swagger-ui
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 3000
+
+          # OpenAPI docs → Backend Service
+          - path: /api-docs
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 3000
+
+          # Semua route lainnya → Frontend Service
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service
+                port:
+                  number: 80

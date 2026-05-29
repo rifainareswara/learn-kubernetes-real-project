@@ -1,0 +1,150 @@
+# =============================================================================
+# Backend Deployment — Rust Axum API
+# =============================================================================
+#
+# 📝 PENJELASAN:
+# Deployment mengelola Pod. Kamu bilang "saya mau 2 replicas",
+# dan Kubernetes akan SELALU memastikan ada 2 pod berjalan.
+#
+# Kalau 1 pod crash → Kubernetes otomatis buat pod baru.
+# Kalau kamu update image → Kubernetes lakukan rolling update
+# (pod baru naik dulu, baru pod lama dihapus → zero downtime).
+#
+# ┌─────────────────────────────────────────────────┐
+# │ Deployment: backend                              │
+# │                                                   │
+# │  ┌─────────────┐  ┌─────────────┐               │
+# │  │ Pod 1       │  │ Pod 2       │               │
+# │  │ backend:v1  │  │ backend:v1  │               │
+# │  └─────────────┘  └─────────────┘               │
+# └─────────────────────────────────────────────────┘
+#
+# Apply:  kubectl apply -f k8s/backend-deployment.yaml
+# Cek:    kubectl get deployment -n taskmanager
+#         kubectl get pods -n taskmanager -l component=backend
+# Logs:   kubectl logs -n taskmanager -l component=backend --tail=100 -f
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: taskmanager
+  labels:
+    app: taskmanager
+    component: backend
+spec:
+  # ── Replicas ───────────────────────────────────────────────────────────
+  # Jumlah pod yang SELALU harus berjalan
+  # 2 replicas = high availability (kalau 1 mati, masih ada 1)
+  replicas: 2
+
+  # ── Selector ───────────────────────────────────────────────────────────
+  # Deployment mengelola pod yang punya label ini
+  selector:
+    matchLabels:
+      app: taskmanager
+      component: backend
+
+  # ── Update Strategy ────────────────────────────────────────────────────
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      # Boleh ada 1 pod EXTRA saat update (total 3 sementara)
+      maxSurge: 1
+      # Minimal 1 pod harus SELALU available saat update
+      maxUnavailable: 0
+
+  # ── Pod Template ───────────────────────────────────────────────────────
+  # Template ini dipakai untuk membuat setiap pod
+  template:
+    metadata:
+      labels:
+        app: taskmanager
+        component: backend
+    spec:
+      containers:
+        - name: backend
+          # ⚠️ GANTI dengan image kamu di Artifact Registry!
+          # Format: REGION-docker.pkg.dev/PROJECT_ID/REPO_NAME/IMAGE_NAME:TAG
+          image: REGION-docker.pkg.dev/PROJECT_ID/taskmanager/backend:latest
+          imagePullPolicy: Always
+
+          ports:
+            - containerPort: 3000
+              name: http
+
+          # ── Environment Variables ──────────────────────────────────────
+          # Dari Secret (data sensitif)
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: taskmanager-secret
+                  key: DATABASE_URL
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: taskmanager-secret
+                  key: JWT_SECRET
+
+          # Dari ConfigMap (data non-sensitif)
+          envFrom:
+            - configMapRef:
+                name: taskmanager-config
+
+          # ── Health Checks (Probes) ────────────────────────────────────
+          #
+          # Liveness Probe: "Apakah container masih hidup?"
+          #   Jika GAGAL → Kubernetes RESTART container
+          #   Contoh: app freeze, deadlock
+          #
+          # Readiness Probe: "Apakah container SIAP terima traffic?"
+          #   Jika GAGAL → Kubernetes STOP kirim traffic ke pod ini
+          #   Contoh: app masih loading, belum connect ke DB
+          #
+          # Startup Probe: "Apakah container sudah selesai startup?"
+          #   Selama startup probe belum sukses, liveness & readiness TIDAK aktif
+          #   Penting untuk app yang butuh waktu lama startup (compile, migration)
+          #
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 30  # 30 x 5s = 150s max startup time
+
+          # ── Resource Requests & Limits ─────────────────────────────────
+          #
+          # requests: minimum resource yang DIJAMIN
+          #   → Kubernetes pakai ini untuk scheduling (pilih node yang cukup)
+          #
+          # limits: maximum resource yang BOLEH dipakai
+          #   → Kalau melebihi memory limit → pod di-kill (OOMKilled)
+          #   → Kalau melebihi CPU limit → pod di-throttle (diperlambat)
+          #
+          resources:
+            requests:
+              cpu: "100m"      # 0.1 CPU core
+              memory: "128Mi"  # 128 MB RAM
+            limits:
+              cpu: "500m"      # 0.5 CPU core
+              memory: "256Mi"  # 256 MB RAM

@@ -1,0 +1,121 @@
+# =============================================================================
+# PostgreSQL StatefulSet — Database dengan Persistent Storage
+# =============================================================================
+#
+# 📝 PENJELASAN:
+# Kenapa StatefulSet, bukan Deployment?
+#
+# Deployment:
+#   - Pod bisa di-restart kapan saja, nama pod berubah (random suffix)
+#   - Cocok untuk aplikasi STATELESS (backend, frontend)
+#   - Data hilang saat pod restart (karena container storage ephemeral)
+#
+# StatefulSet:
+#   - Pod punya nama TETAP (postgres-0, postgres-1, postgres-2)
+#   - Setiap pod punya PersistentVolume sendiri yang SURVIVE restart
+#   - Pod di-start/stop BERURUTAN (0 → 1 → 2)
+#   - Cocok untuk aplikasi STATEFUL (database, message queue)
+#
+# Apply:  kubectl apply -f k8s/postgres-statefulset.yaml
+# Cek:    kubectl get statefulset -n taskmanager
+#         kubectl get pvc -n taskmanager
+# =============================================================================
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: taskmanager
+  labels:
+    app: taskmanager
+    component: database
+spec:
+  # Nama service yang terhubung ke StatefulSet ini
+  serviceName: postgres-service
+  # Hanya 1 replica karena kita tidak setup PostgreSQL replication
+  replicas: 1
+  selector:
+    matchLabels:
+      app: taskmanager
+      component: database
+  template:
+    metadata:
+      labels:
+        app: taskmanager
+        component: database
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+              name: postgres
+          # ── Environment Variables ──────────────────────────────────────
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: taskmanager-config
+                  key: DB_NAME
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: taskmanager-secret
+                  key: DB_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: taskmanager-secret
+                  key: DB_PASSWORD
+            # Lokasi data PostgreSQL di dalam container
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          # ── Volume Mount ──────────────────────────────────────────────
+          # Mount PersistentVolume ke path data PostgreSQL
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+          # ── Resource Limits ───────────────────────────────────────────
+          # Batasi CPU dan memory agar tidak mengganggu pod lain
+          resources:
+            requests:
+              cpu: "100m"      # 0.1 CPU core (minimum yang dijamin)
+              memory: "256Mi"  # 256 MB RAM (minimum yang dijamin)
+            limits:
+              cpu: "500m"      # 0.5 CPU core (maksimum)
+              memory: "512Mi"  # 512 MB RAM (maksimum)
+          # ── Health Checks ─────────────────────────────────────────────
+          # Liveness: apakah container masih hidup?
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - postgres
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          # Readiness: apakah container siap terima traffic?
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - postgres
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+  # ── Volume Claim Template ──────────────────────────────────────────────
+  # PersistentVolumeClaim otomatis dibuat untuk setiap pod
+  # Di GKE, StorageClass "standard" menggunakan Google Persistent Disk
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+      spec:
+        accessModes: ["ReadWriteOnce"]  # Hanya 1 pod bisa mount
+        storageClassName: standard-rwo   # GKE default StorageClass
+        resources:
+          requests:
+            storage: 5Gi  # 5 GB storage (cukup untuk belajar)

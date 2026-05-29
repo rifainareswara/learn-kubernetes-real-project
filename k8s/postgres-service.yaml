@@ -1,0 +1,41 @@
+# =============================================================================
+# PostgreSQL Service — Headless Service untuk StatefulSet
+# =============================================================================
+#
+# 📝 PENJELASAN:
+# Service ini membuat PostgreSQL bisa diakses oleh pod lain di cluster.
+#
+# Kenapa "Headless" (clusterIP: None)?
+# - Service biasa punya 1 IP virtual yang load-balance ke semua pods
+# - Headless Service TIDAK punya IP virtual
+# - Sebaliknya, DNS langsung menunjuk ke IP pod
+# - Ini penting untuk StatefulSet karena setiap pod unik (bukan interchangeable)
+#
+# DNS yang dibuat:
+#   postgres-service.taskmanager.svc.cluster.local  → IP pod postgres-0
+#   postgres-0.postgres-service.taskmanager.svc.cluster.local → IP pod postgres-0
+#
+# Dari pod lain, cukup akses: postgres-service:5432
+#
+# Apply:  kubectl apply -f k8s/postgres-service.yaml
+# Cek:    kubectl get svc -n taskmanager
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: taskmanager
+  labels:
+    app: taskmanager
+    component: database
+spec:
+  # Headless Service — tidak ada virtual IP
+  clusterIP: None
+  # Selector menentukan pod mana yang di-routing
+  selector:
+    app: taskmanager
+    component: database
+  ports:
+    - port: 5432
+      targetPort: 5432
+      name: postgres

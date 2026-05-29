@@ -1,0 +1,70 @@
+# =============================================================================
+# Docker Compose — Local Development
+# =============================================================================
+#
+# Jalankan seluruh stack secara lokal sebelum deploy ke Kubernetes.
+#
+# Usage:
+#   docker compose up -d          # Start semua services
+#   docker compose logs -f        # Lihat logs
+#   docker compose down           # Stop semua
+#   docker compose down -v        # Stop + hapus data PostgreSQL
+#
+# Services:
+#   - frontend : http://localhost:8080  (Svelte + Nginx)
+#   - backend  : http://localhost:3000  (Rust Axum API)
+#   - postgres : localhost:5432         (PostgreSQL)
+# =============================================================================
+
+services:
+  # ── PostgreSQL Database ──────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: taskmanager-db
+    environment:
+      POSTGRES_DB: taskmanager
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Rust Axum Backend ──────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: taskmanager-api
+    environment:
+      DATABASE_URL: postgres://postgres:postgres123@postgres:5432/taskmanager
+      JWT_SECRET: super-secret-dev-key-change-in-production
+      HOST: 0.0.0.0
+      PORT: 3000
+      RUST_LOG: taskmanager_api=debug,tower_http=debug
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ── Svelte Frontend ───────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: taskmanager-frontend
+    environment:
+      BACKEND_HOST: backend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:

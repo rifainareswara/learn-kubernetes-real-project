@@ -1,0 +1,16 @@
+# Build artifacts
+target/
+# IDE
+.vscode/
+.idea/
+# Git
+.git/
+.gitignore
+# Docs
+docs/
+README.md
+# Environment (secrets — jangan masukkan ke image!)
+.env
+.env.example
+# Tests (tidak perlu di production image)
+tests/

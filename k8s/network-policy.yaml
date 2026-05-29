@@ -1,0 +1,94 @@
+# =============================================================================
+# Network Policy — Keamanan Jaringan antar Pod
+# =============================================================================
+#
+# 📝 PENJELASAN:
+# Secara default, SEMUA pod bisa berkomunikasi dengan semua pod lain.
+# Ini berbahaya! Kalau frontend di-hack, attacker bisa langsung akses database.
+#
+# Network Policy membatasi traffic:
+#   - PostgreSQL HANYA bisa diakses oleh backend
+#   - Backend bisa diakses oleh frontend dan Ingress
+#   - Frontend bisa diakses oleh Ingress saja
+#
+# ⚠️ PENTING:
+# Network Policy HANYA bekerja jika cluster menggunakan network plugin
+# yang support (Calico, Cilium). GKE Autopilot sudah support!
+#
+# Apply:  kubectl apply -f k8s/network-policy.yaml
+# Cek:    kubectl get networkpolicy -n taskmanager
+# =============================================================================
+
+---
+# ── Policy 1: PostgreSQL — Hanya Backend yang Boleh Akses ────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgres-network-policy
+  namespace: taskmanager
+spec:
+  # Terapkan ke pod database
+  podSelector:
+    matchLabels:
+      component: database
+  policyTypes:
+    - Ingress
+  ingress:
+    # Hanya izinkan traffic dari pod backend
+    - from:
+        - podSelector:
+            matchLabels:
+              component: backend
+      ports:
+        - port: 5432
+          protocol: TCP
+
+---
+# ── Policy 2: Backend — Frontend & Ingress Boleh Akses ───────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-network-policy
+  namespace: taskmanager
+spec:
+  podSelector:
+    matchLabels:
+      component: backend
+  policyTypes:
+    - Ingress
+  ingress:
+    # Izinkan dari frontend
+    - from:
+        - podSelector:
+            matchLabels:
+              component: frontend
+      ports:
+        - port: 3000
+          protocol: TCP
+    # Izinkan dari Ingress controller (di namespace lain)
+    - from:
+        - namespaceSelector: {}
+      ports:
+        - port: 3000
+          protocol: TCP
+
+---
+# ── Policy 3: Frontend — Ingress Boleh Akses ────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: frontend-network-policy
+  namespace: taskmanager
+spec:
+  podSelector:
+    matchLabels:
+      component: frontend
+  policyTypes:
+    - Ingress
+  ingress:
+    # Izinkan dari Ingress controller
+    - from:
+        - namespaceSelector: {}
+      ports:
+        - port: 80
+          protocol: TCP

@@ -1,0 +1,51 @@
+# =============================================================================
+# Backend Service — ClusterIP (Internal Networking)
+# =============================================================================
+#
+# 📝 PENJELASAN:
+# Service memberikan SATU alamat stabil untuk mengakses backend pods.
+#
+# Tanpa Service:
+#   Frontend harus tahu IP setiap pod → IP berubah setiap restart!
+#
+# Dengan Service:
+#   Frontend cukup akses "backend-service:3000" → Service otomatis
+#   load-balance ke semua pod yang match selector.
+#
+# ┌──────────┐     ┌──────────────────┐     ┌─────────────┐
+# │ Frontend │────▶│ backend-service  │────▶│ Pod 1       │
+# │          │     │ (ClusterIP)      │──┐  │ backend:v1  │
+# └──────────┘     └──────────────────┘  │  └─────────────┘
+#                                         │  ┌─────────────┐
+#                                         └─▶│ Pod 2       │
+#                                            │ backend:v1  │
+#                                            └─────────────┘
+#
+# Tipe Service:
+#   ClusterIP  : Hanya bisa diakses dari DALAM cluster (default)
+#   NodePort   : Bisa diakses dari LUAR via node IP + port
+#   LoadBalancer: Buat external Load Balancer (di cloud)
+#
+# Apply:  kubectl apply -f k8s/backend-service.yaml
+# Cek:    kubectl get svc -n taskmanager
+# Test:   kubectl run curl --rm -it --image=curlimages/curl -n taskmanager \
+#           -- curl http://backend-service:3000/health
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: taskmanager
+  labels:
+    app: taskmanager
+    component: backend
+spec:
+  type: ClusterIP
+  selector:
+    app: taskmanager
+    component: backend
+  ports:
+    - port: 3000        # Port yang diekspos oleh Service
+      targetPort: 3000   # Port di container
+      protocol: TCP
+      name: http
