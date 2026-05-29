@@ -172,13 +172,13 @@ gcloud container clusters create-auto taskmanager-cluster \
 
 ## Checklist ✅
 
-- [ ] `gcloud auth login` berhasil
-- [ ] Project di-set dengan `gcloud config set project`
-- [ ] APIs diaktifkan (container, artifactregistry)
-- [ ] Artifact Registry repository dibuat
-- [ ] GKE cluster dibuat dan running
-- [ ] `kubectl get nodes` menampilkan nodes
-- [ ] Paham cara matikan cluster untuk hemat credit
+- [x] `gcloud auth login` berhasil
+- [x] Project di-set dengan `gcloud config set project`
+- [x] APIs diaktifkan (container, artifactregistry)
+- [x] Artifact Registry repository dibuat
+- [x] GKE cluster dibuat dan running
+- [x] `kubectl get nodes` menampilkan nodes
+- [x] Paham cara matikan cluster untuk hemat credit
 
 ---
 

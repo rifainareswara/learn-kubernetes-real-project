@@ -66,7 +66,7 @@ spec:
         - name: backend
           # ⚠️ GANTI dengan image kamu di Artifact Registry!
           # Format: REGION-docker.pkg.dev/PROJECT_ID/REPO_NAME/IMAGE_NAME:TAG
-          image: REGION-docker.pkg.dev/PROJECT_ID/taskmanager/backend:latest
+          image: asia-southeast2-docker.pkg.dev/capable-hash-452806-a0/taskmanager/backend:v1
           imagePullPolicy: Always
 
           ports:

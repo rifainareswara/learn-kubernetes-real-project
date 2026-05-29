@@ -39,7 +39,7 @@ spec:
       containers:
         - name: frontend
           # ⚠️ GANTI dengan image kamu di Artifact Registry!
-          image: REGION-docker.pkg.dev/PROJECT_ID/taskmanager/frontend:latest
+          image: asia-southeast2-docker.pkg.dev/capable-hash-452806-a0/taskmanager/frontend:v1
           imagePullPolicy: Always
 
           ports:
