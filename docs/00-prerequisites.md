@@ -44,6 +44,21 @@ gcloud config get-value project
 
 > 💡 **Project ID** bisa kamu lihat di [console.cloud.google.com](https://console.cloud.google.com)
 
+### 🔄 Cara Switch Akun gcloud (Jika Punya Banyak Akun)
+
+Jika kamu memiliki lebih dari satu akun Google Cloud di laptopmu, kamu bisa melihat daftar akun dan beralih antar akun dengan perintah berikut:
+
+```bash
+# Lihat daftar akun yang sudah login
+gcloud auth list
+
+# Switch/ganti akun yang aktif
+gcloud config set account EMAIL_KAMU@domain.com
+
+# Jika akun belum ada di list, login dengan akun baru
+gcloud auth login
+```
+
 ---
 
 ## Step 3: Aktifkan APIs yang Dibutuhkan
