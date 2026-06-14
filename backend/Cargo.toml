@@ -4,6 +4,10 @@ version = "0.1.0"
 edition = "2021"
 description = "Task Management API — Rust Axum + PostgreSQL (Kubernetes Real Project)"
 
+[lib]
+name = "learn_rust_axum"
+path = "src/lib.rs"
+
 # ==============================================================================
 # DEPENDENCY GUIDE
 # ==============================================================================

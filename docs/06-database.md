@@ -1,4 +1,4 @@
-# Fase 5: Database di Kubernetes
+# Fase 6: Database di Kubernetes
 
 > **Tujuan**: Memahami StatefulSet, PersistentVolume, dan cara mengelola database di Kubernetes.
 
@@ -186,4 +186,4 @@ kubectl exec -it postgres-0 -n taskmanager -- \
 
 ---
 
-**Selanjutnya**: [Fase 6 — Networking →](./06-networking.md)
+**Selanjutnya**: [Fase 7 — Networking →](./07-networking.md)

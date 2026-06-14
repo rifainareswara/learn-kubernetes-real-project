@@ -147,7 +147,26 @@ taskmanager-frontend    v1     ~25-40MB   ✅
 
 ---
 
-## Step 5: Push ke Artifact Registry
+## Step 5: Kirim Image ke Cluster (Minikube / GCP)
+
+Pilihlah salah satu cara di bawah ini sesuai dengan environment cluster yang kamu gunakan:
+
+### 💻 JALUR A: Minikube (Lokal)
+Jika kamu memakai Minikube, kamu **TIDAK perlu** melakukan push ke cloud registry. Kamu cukup memasukkan image lokal yang baru saja kamu build langsung ke dalam VM/Container Minikube:
+
+```bash
+# Load backend image ke Minikube
+minikube image load taskmanager-backend:v1
+
+# Load frontend image ke Minikube
+minikube image load taskmanager-frontend:v1
+
+# Verifikasi image sudah ter-load di Minikube
+minikube image list | grep taskmanager
+```
+
+### ☁️ JALUR B: GCP & GKE (Cloud)
+Jika kamu memakai GKE di Google Cloud, kamu harus mengunggah (push) image ke Artifact Registry agar cluster GKE bisa men-download-nya:
 
 ```bash
 # Set variabel (GANTI dengan milik kamu!)
@@ -155,7 +174,7 @@ export PROJECT_ID=your-project-id
 export REGION=asia-southeast2
 export REGISTRY=${REGION}-docker.pkg.dev/${PROJECT_ID}/taskmanager
 
-# Tag images
+# Tag images agar mengarah ke Artifact Registry
 docker tag taskmanager-backend:v1 ${REGISTRY}/backend:v1
 docker tag taskmanager-backend:v1 ${REGISTRY}/backend:latest
 docker tag taskmanager-frontend:v1 ${REGISTRY}/frontend:v1
@@ -233,4 +252,4 @@ docker compose restart backend
 
 ---
 
-**Selanjutnya**: [Fase 3 — Deploy Pertama ke Kubernetes →](./03-first-deployment.md)
+**Selanjutnya**: [Fase 3 — Run Lokal di Minikube →](./03-local-minikube.md)

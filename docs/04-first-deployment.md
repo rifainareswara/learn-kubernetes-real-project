@@ -1,4 +1,4 @@
-# Fase 3: Deploy Pertama ke Kubernetes! 🚀
+# Fase 4: Deploy Pertama ke Kubernetes! 🚀
 
 > **Tujuan**: Deploy aplikasi fullstack ke GKE untuk pertama kalinya.
 
@@ -361,4 +361,4 @@ kubectl rollout undo deployment/backend -n taskmanager
 
 ---
 
-**Selanjutnya**: [Fase 4 — Config & Secrets →](./04-config-secrets.md)
+**Selanjutnya**: [Fase 5 — Config & Secrets →](./05-config-secrets.md)

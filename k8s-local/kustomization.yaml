@@ -34,11 +34,11 @@ resources:
 # ── Ganti nama+tag image ke image lokal (hasil build di minikube) ────────────
 images:
   - name: asia-southeast2-docker.pkg.dev/capable-hash-452806-a0/taskmanager/backend
-    newName: taskmanager/backend
-    newTag: local
+    newName: taskmanager-backend
+    newTag: v1
   - name: asia-southeast2-docker.pkg.dev/capable-hash-452806-a0/taskmanager/frontend
-    newName: taskmanager/frontend
-    newTag: local
+    newName: taskmanager-frontend
+    newTag: v1
 
 # ── Patches lokal ────────────────────────────────────────────────────────────
 patches:

@@ -1,4 +1,4 @@
-# Fase 8: Production Best Practices
+# Fase 9: Production Best Practices
 
 > **Tujuan**: Autoscaling, keamanan jaringan, CI/CD, dan tips optimasi biaya.
 
@@ -234,12 +234,13 @@ Kalau dimatikan saat tidak dipakai: **bisa 6+ bulan!**
 Fase 0: ✅ Setup GCP & GKE
 Fase 1: ✅ Konsep dasar (Pod, Deployment, Service, dll)
 Fase 2: ✅ Docker multi-stage build, Docker Compose
-Fase 3: ✅ Deploy pertama ke K8s, debugging
-Fase 4: ✅ ConfigMap & Secret management
-Fase 5: ✅ StatefulSet & Persistent Volume (database)
-Fase 6: ✅ Ingress & Load Balancer (networking)
-Fase 7: ✅ Health probes, resource limits, monitoring
-Fase 8: ✅ HPA, Network Policy, CI/CD
+Fase 3: ✅ Run lokal di minikube (Kustomize overlay)
+Fase 4: ✅ Deploy pertama ke K8s, debugging
+Fase 5: ✅ ConfigMap & Secret management
+Fase 6: ✅ StatefulSet & Persistent Volume (database)
+Fase 7: ✅ Ingress & Load Balancer (networking)
+Fase 8: ✅ Health probes, resource limits, monitoring
+Fase 9: ✅ HPA, Network Policy, CI/CD
 ```
 
 ### Skills yang Kamu Miliki Sekarang:

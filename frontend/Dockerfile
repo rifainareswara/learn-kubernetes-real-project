@@ -32,8 +32,13 @@ RUN VITE_API_URL="" npm run build
 # ── Stage 2: Serve dengan Nginx ──────────────────────────────────────────────
 FROM nginx:alpine AS runtime
 
-# Copy custom nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy custom nginx config sebagai TEMPLATE.
+# Entrypoint nginx (20-envsubst-on-templates.sh) menjalankan envsubst pada
+# semua file di /etc/nginx/templates/*.template, mengganti ${BACKEND_HOST}
+# dengan nilai env var, lalu menulis hasilnya ke /etc/nginx/conf.d/default.conf.
+# Penting: envsubst hanya mengganti variabel yang ADA di environment, jadi
+# variabel nginx sendiri ($uri, $host, $remote_addr, dst) tetap aman.
+COPY nginx.conf /etc/nginx/templates/default.conf.template
 
 # Copy build output dari stage 1
 COPY --from=builder /app/dist /usr/share/nginx/html

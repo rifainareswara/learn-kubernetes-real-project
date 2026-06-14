@@ -47,12 +47,13 @@ Tutorial step-by-step dari nol, tersedia di folder `docs/`:
 | 0 | Prerequisites & Setup GCP | [docs/00-prerequisites.md](docs/00-prerequisites.md) |
 | 1 | Konsep Dasar Kubernetes | [docs/01-konsep-dasar.md](docs/01-konsep-dasar.md) |
 | 2 | Containerization (Docker) | [docs/02-containerization.md](docs/02-containerization.md) |
-| 3 | Deploy Pertama ke K8s 🚀 | [docs/03-first-deployment.md](docs/03-first-deployment.md) |
-| 4 | Config & Secrets | [docs/04-config-secrets.md](docs/04-config-secrets.md) |
-| 5 | Database (StatefulSet) | [docs/05-database.md](docs/05-database.md) |
-| 6 | Networking (Ingress) | [docs/06-networking.md](docs/06-networking.md) |
-| 7 | Observability | [docs/07-observability.md](docs/07-observability.md) |
-| 8 | Production Best Practices | [docs/08-production.md](docs/08-production.md) |
+| 3 | Run Lokal di Minikube 🖥️ | [docs/03-local-minikube.md](docs/03-local-minikube.md) |
+| 4 | Deploy Pertama ke K8s 🚀 | [docs/04-first-deployment.md](docs/04-first-deployment.md) |
+| 5 | Config & Secrets | [docs/05-config-secrets.md](docs/05-config-secrets.md) |
+| 6 | Database (StatefulSet) | [docs/06-database.md](docs/06-database.md) |
+| 7 | Networking (Ingress) | [docs/07-networking.md](docs/07-networking.md) |
+| 8 | Observability | [docs/08-observability.md](docs/08-observability.md) |
+| 9 | Production Best Practices | [docs/09-production.md](docs/09-production.md) |
 
 ## 🚀 Quick Start
 
@@ -164,12 +165,13 @@ learn-kubernetes-real-project/
     ├── 00-prerequisites.md
     ├── 01-konsep-dasar.md
     ├── 02-containerization.md
-    ├── 03-first-deployment.md
-    ├── 04-config-secrets.md
-    ├── 05-database.md
-    ├── 06-networking.md
-    ├── 07-observability.md
-    └── 08-production.md
+    ├── 03-local-minikube.md
+    ├── 04-first-deployment.md
+    ├── 05-config-secrets.md
+    ├── 06-database.md
+    ├── 07-networking.md
+    ├── 08-observability.md
+    └── 09-production.md
 ```
 
 ## 📋 API Endpoints

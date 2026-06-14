@@ -1,4 +1,4 @@
-# Fase 4: Config & Secrets
+# Fase 5: Config & Secrets
 
 > **Tujuan**: Memahami cara mengelola konfigurasi dan data sensitif di Kubernetes.
 
@@ -216,4 +216,4 @@ kubectl logs -l component=backend -n taskmanager --tail=20
 
 ---
 
-**Selanjutnya**: [Fase 5 — Database di Kubernetes →](./05-database.md)
+**Selanjutnya**: [Fase 6 — Database di Kubernetes →](./06-database.md)

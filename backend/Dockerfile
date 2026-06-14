@@ -22,6 +22,8 @@ FROM rust:slim-bookworm AS builder
 RUN apt-get update && apt-get install -y \
     pkg-config \
     libssl-dev \
+    curl \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory di dalam container
@@ -33,8 +35,8 @@ WORKDIR /app
 # kalau hanya source code yang berubah (bukan dependencies).
 COPY Cargo.toml Cargo.lock ./
 
-# Buat dummy main.rs agar cargo build bisa compile dependencies
-RUN mkdir src && echo "fn main() {}" > src/main.rs
+# Buat dummy main.rs dan lib.rs agar cargo build bisa compile dependencies
+RUN mkdir src && echo "fn main() {}" > src/main.rs && touch src/lib.rs
 
 # Build dependencies saja (akan di-cache oleh Docker)
 RUN cargo build --release && rm -rf src
@@ -43,8 +45,8 @@ RUN cargo build --release && rm -rf src
 COPY src/ src/
 COPY migrations/ migrations/
 
-# Touch main.rs agar cargo tahu file berubah dan perlu recompile
-RUN touch src/main.rs
+# Touch files agar cargo tahu source code berubah dan perlu recompile
+RUN touch src/main.rs src/lib.rs
 
 # Build binary final
 RUN cargo build --release

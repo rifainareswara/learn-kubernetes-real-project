@@ -29,6 +29,65 @@ Dengan Kubernetes:
 
 ---
 
+## 🔄 Alur Kerja (Flow) di Kubernetes
+
+Untuk memahami bagaimana objek-objek di Kubernetes saling berinteraksi, mari kita bagi menjadi 2 alur utama:
+
+### A. Alur Deployment (Dari Code ke Cluster)
+Bagaimana aplikasi yang kamu buat di laptop (Rust backend & Svelte frontend) bisa berjalan di dalam Minikube/Kubernetes:
+
+```
+[1. SOURCE CODE] 
+   Code program di laptop kamu (Rust & Svelte)
+          │
+          ▼
+[2. DOCKER IMAGE]
+   Di-build menjadi Docker Image (kemasan aplikasi)
+          │
+          ▼
+[3. LOAD TO CLUSTER]
+   Docker Image dikirim masuk ke Minikube (lewat `minikube image load`)
+          │
+          ▼
+[4. YAML MANIFEST]
+   Menulis Deployment YAML: "K8s, jalankan Image ini sebanyak 2 replika"
+          │
+          ▼
+[5. RUNNING PODS]
+   Kubernetes membuat container berjalan yang disebut dengan **Pod**
+```
+
+### B. Alur Request (Bagaimana User Mengakses Aplikasi)
+Bagaimana request dari browser user mengalir melewati objek-objek Kubernetes hingga sampai ke database:
+
+```
+                  [ USER BROWSER ] (Membuka aplikasi)
+                         │
+                         ▼ (Melalui Port-forward / Ingress)
+                    [ INGRESS ] (Pintu Gerbang Utama)
+                         │
+        ┌────────────────┴────────────────┐
+        │ (Jika akses website biasa /)    │ (Jika akses API /api/*)
+        ▼                                 ▼
+[ FRONTEND SERVICE ]              [ BACKEND SERVICE ]
+  (IP & DNS tetap)                  (IP & DNS tetap)
+        │                                 │
+        ▼ (Load balance)                  ▼ (Load balance)
+ [ FRONTEND PODS ]                 [ BACKEND PODS ]
+ (Kontainer Svelte)                (Kontainer Rust API)
+                                          │
+                                          ▼ (Connect ke DB)
+                                  [ POSTGRES SERVICE ]
+                                          │
+                                          ▼
+                                   [ POSTGRES POD ]
+                                 (Database PostgreSQL)
+```
+
+> 💡 **Kenapa butuh Service?** Pod di Kubernetes bersifat *ephemeral* (bisa mati dan hidup lagi dengan IP baru). Service bertindak sebagai "jembatan" dengan IP tetap, sehingga backend tetap bisa menemukan database meskipun pod database di-restart dan mendapatkan IP baru.
+
+---
+
 ## Arsitektur Kubernetes
 
 ```

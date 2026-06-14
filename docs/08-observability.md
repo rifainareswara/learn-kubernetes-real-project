@@ -1,4 +1,4 @@
-# Fase 7: Observability — Monitoring & Logging
+# Fase 8: Observability — Monitoring & Logging
 
 > **Tujuan**: Memahami health probes, resource management, dan cara monitoring di GKE.
 
@@ -255,4 +255,4 @@ kubectl apply -f k8s/backend-deployment.yaml
 
 ---
 
-**Selanjutnya**: [Fase 8 — Production Best Practices →](./08-production.md)
+**Selanjutnya**: [Fase 9 — Production Best Practices →](./09-production.md)

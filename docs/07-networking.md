@@ -1,4 +1,4 @@
-# Fase 6: Networking — Ingress & Load Balancer
+# Fase 7: Networking — Ingress & Load Balancer
 
 > **Tujuan**: Expose aplikasi ke internet menggunakan Ingress dan GKE Load Balancer.
 
@@ -209,4 +209,4 @@ kubectl get endpoints -n taskmanager
 
 ---
 
-**Selanjutnya**: [Fase 7 — Observability →](./07-observability.md)
+**Selanjutnya**: [Fase 8 — Observability →](./08-observability.md)
