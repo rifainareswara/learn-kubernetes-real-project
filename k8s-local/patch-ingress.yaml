@@ -1,0 +1,10 @@
+# GKE: annotation "gce" bikin Google Cloud Load Balancer.
+# Minikube: pakai ingress-nginx (addon) + host lokal taskmanager.local.
+- op: remove
+  path: /metadata/annotations/kubernetes.io~1ingress.class
+- op: add
+  path: /spec/ingressClassName
+  value: nginx
+- op: add
+  path: /spec/rules/0/host
+  value: taskmanager.local

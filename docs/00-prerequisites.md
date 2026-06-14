@@ -1,36 +1,90 @@
-# Fase 0: Prerequisites & Setup GCP
+# Fase 0: Prerequisites & Setup Environment (Minikube / GCP)
 
-> **Tujuan**: Setup GCP project, buat GKE cluster, dan hubungkan `kubectl` ke cluster.
+> **Tujuan**: Menyiapkan environment Kubernetes lokal (menggunakan Minikube) atau di Cloud (menggunakan Google Kubernetes Engine / GKE) dan menghubungkan `kubectl`.
 
-## Apa yang Akan Kamu Pelajari
-- Cara setup project di Google Cloud Platform
-- Cara membuat Kubernetes cluster (GKE Autopilot)
-- Cara menghubungkan `kubectl` lokal ke GKE
-- Cara setup Artifact Registry (tempat simpan Docker images)
+Untuk belajar, kamu bisa memilih salah satu jalur setup di bawah ini:
+1. **Jalur A: Minikube (Lokal & 100% Gratis)** 💡 *Sangat direkomendasikan untuk pemula agar hemat kuota internet dan bebas biaya cloud.*
+2. **Jalur B: Google Cloud Platform / GKE (Cloud)** ☁️ *Untuk simulasi lingkungan produksi yang sesungguhnya di GCP.*
 
 ---
 
-## Step 1: Cek Tools yang Sudah Terinstall
+## 🛠️ Step 1: Install Tools Dasar
 
-Pastikan tools berikut sudah terinstall di laptop kamu:
+Apapun jalur yang kamu pilih, pastikan tool dasar ini sudah terinstall di laptop kamu:
 
 ```bash
-# Cek Docker
+# Cek Docker (Minikube & GCP butuh ini)
 docker --version
 
 # Cek kubectl (Kubernetes CLI)
 kubectl version --client
-
-# Cek Google Cloud SDK
-gcloud --version
 ```
-
-✅ Semua harus menghasilkan output versi, bukan error.
 
 ---
 
-## Step 2: Login ke Google Cloud
+## 💻 JALUR A: Setup Menggunakan Minikube (Lokal)
 
+Minikube adalah tool yang menjalankan cluster Kubernetes single-node di dalam Virtual Machine (VM) atau container Docker di laptop kamu.
+
+### 1. Install Minikube
+Jika belum punya, install minikube terlebih dahulu:
+*   **macOS (Homebrew)**: `brew install minikube`
+*   **Windows (Chocolatey)**: `choco install minikube`
+*   *Atau download installer langsung dari [situs resmi Minikube](https://minikube.sigs.k8s.io/docs/start/).*
+
+### 2. Jalankan Minikube
+```bash
+# Jalankan cluster Minikube menggunakan driver Docker
+minikube start --driver=docker
+
+# Jika laptop kamu menggunakan Apple Silicon (M1/M2/M3), jalankan:
+# minikube start --driver=docker --arch=arm64
+```
+
+> ⏳ Proses pertama kali akan mendownload image Kubernetes (sekitar 1-2 GB). Silakan tunggu hingga selesai.
+
+### 3. Verifikasi Koneksi
+Minikube secara otomatis akan mengonfigurasi `kubectl` kamu agar terhubung ke cluster lokal ini.
+```bash
+# Cek info cluster
+kubectl cluster-info
+
+# Lihat node minikube yang sedang berjalan
+kubectl get nodes
+```
+Output yang diharapkan:
+```
+Kubernetes control plane is running at https://127.0.0.1:XXXXX
+CoreDNS is running at https://127.0.0.1:XXXXX/...
+
+NAME       STATUS   ROLES           AGE   VERSION
+minikube   Ready    control-plane   1m    v1.xx.x
+```
+
+### 4. Tips Minikube: Point Docker ke Minikube Daemon (PENTING!)
+Agar kamu bisa membuild Docker Image lokal tanpa perlu melakukan push ke Docker Hub/Artifact Registry, kamu bisa mengarahkan Docker CLI laptopmu langsung ke dalam Docker Daemon di dalam Minikube:
+```bash
+# Jalankan ini di terminal (khusus macOS/Linux)
+eval $(minikube docker-env)
+
+# Untuk Windows (PowerShell):
+# & minikube -p minikube docker-env | Invoke-Expression
+```
+> ⚠️ **Catatan**: Perintah `eval` ini hanya berlaku untuk session terminal saat ini. Jika kamu membuka tab terminal baru, kamu harus menjalankannya lagi.
+
+---
+
+## ☁️ JALUR B: Setup Menggunakan GCP & GKE (Cloud)
+
+Jika kamu ingin mencoba langsung di cloud provider menggunakan Google Kubernetes Engine (GKE):
+
+### 1. Install Google Cloud CLI (gcloud)
+Pastikan gcloud CLI sudah terinstall:
+```bash
+gcloud --version
+```
+
+### 2. Login ke Google Cloud
 ```bash
 # Login ke akun Google kamu
 gcloud auth login
@@ -41,45 +95,16 @@ gcloud config set project YOUR_PROJECT_ID
 # Verifikasi
 gcloud config get-value project
 ```
+> 🔄 *Tips: Jika kamu memiliki banyak akun gcloud di laptop, beralihlah dengan perintah `gcloud config set account EMAIL_KAMU@domain.com`.*
 
-> 💡 **Project ID** bisa kamu lihat di [console.cloud.google.com](https://console.cloud.google.com)
-
-### 🔄 Cara Switch Akun gcloud (Jika Punya Banyak Akun)
-
-Jika kamu memiliki lebih dari satu akun Google Cloud di laptopmu, kamu bisa melihat daftar akun dan beralih antar akun dengan perintah berikut:
-
+### 3. Aktifkan APIs yang Dibutuhkan
 ```bash
-# Lihat daftar akun yang sudah login
-gcloud auth list
-
-# Switch/ganti akun yang aktif
-gcloud config set account EMAIL_KAMU@domain.com
-
-# Jika akun belum ada di list, login dengan akun baru
-gcloud auth login
-```
-
----
-
-## Step 3: Aktifkan APIs yang Dibutuhkan
-
-```bash
-# Aktifkan Kubernetes Engine API
+# Aktifkan Kubernetes Engine API & Artifact Registry
 gcloud services enable container.googleapis.com
-
-# Aktifkan Artifact Registry API (untuk simpan Docker images)
 gcloud services enable artifactregistry.googleapis.com
-
-# Aktifkan Cloud Build API (opsional, untuk build di cloud)
-gcloud services enable cloudbuild.googleapis.com
 ```
 
----
-
-## Step 4: Buat Artifact Registry Repository
-
-Artifact Registry adalah "Docker Hub milik Google" — tempat menyimpan Docker images.
-
+### 4. Buat Artifact Registry Repository (Docker Registry di GCP)
 ```bash
 # Buat repository
 gcloud artifacts repositories create taskmanager \
@@ -89,111 +114,69 @@ gcloud artifacts repositories create taskmanager \
 
 # Konfigurasi Docker agar bisa push ke Artifact Registry
 gcloud auth configure-docker asia-southeast2-docker.pkg.dev
-
-# Verifikasi
-gcloud artifacts repositories list --location=asia-southeast2
 ```
 
-> 💡 `asia-southeast2` = Jakarta. Pilih region terdekat untuk latency rendah.
-
----
-
-## Step 5: Buat GKE Autopilot Cluster
-
+### 5. Buat GKE Autopilot Cluster
 ```bash
-# Buat cluster Autopilot
-# Autopilot = Google mengelola nodes, kamu hanya fokus deploy aplikasi
+# Buat cluster Autopilot (di region Jakarta: asia-southeast2)
 gcloud container clusters create-auto taskmanager-cluster \
   --region=asia-southeast2 \
   --project=YOUR_PROJECT_ID
-
-# ⏳ Proses ini butuh 5-10 menit...
 ```
 
-### Kenapa Autopilot?
-
-| Fitur | Autopilot | Standard |
-|-------|-----------|----------|
-| Kelola nodes | Google | Kamu sendiri |
-| Bayar | Per pod (sesuai pemakaian) | Per node (24/7) |
-| Setup | Sangat mudah | Perlu konfigurasi |
-| Cocok untuk | Belajar, production kecil | Production besar |
-| Estimasi biaya | ~$3-5/hari | ~$5-15/hari |
-
----
-
-## Step 6: Hubungkan kubectl ke GKE
-
+### 6. Hubungkan kubectl ke GKE
 ```bash
-# Get credentials (otomatis konfigurasi kubectl)
 gcloud container clusters get-credentials taskmanager-cluster \
   --region=asia-southeast2
-
-# Verifikasi koneksi
-kubectl cluster-info
-
-# Lihat nodes
-kubectl get nodes
 ```
-
-Output yang diharapkan:
-```
-Kubernetes control plane is running at https://xx.xx.xx.xx
-...
-
-NAME                                          STATUS   ROLES    AGE   VERSION
-gk3-taskmanager-cluster-pool-xxxx-xxxx        Ready    <none>   5m    v1.xx.x
-```
-
-🎉 **Selamat!** kubectl kamu sudah terhubung ke GKE!
 
 ---
 
-## Step 7: Kenalan Pertama dengan kubectl
+## 🎯 Step 3: Kenalan Pertama dengan kubectl
 
-Coba jalankan beberapa perintah dasar:
+Apapun jalur yang kamu pilih (Minikube maupun GCP), coba jalankan perintah-perintah ini untuk memastikan kubectl bekerja:
 
 ```bash
-# Lihat semua namespaces
+# Lihat semua namespaces yang ada secara default
 kubectl get namespaces
 
-# Lihat pods di semua namespace
+# Lihat pods yang sedang berjalan di cluster (awal-awal biasanya masih kosong atau sistem saja)
 kubectl get pods --all-namespaces
-
-# Lihat detail cluster
-kubectl cluster-info dump | head -50
 ```
 
 ---
 
-## ⚠️ Tips Hemat Credit
+## ⚠️ Menghemat Resource & Credit
 
+Agar laptop tidak lemot atau saldo Google Cloud tidak habis sia-sia saat tidak belajar:
+
+### A. Jika Pakai Minikube (Hemat RAM/CPU Laptop)
 ```bash
-# MATIKAN cluster saat tidak dipakai (hemat $3-5/hari!)
+# Hentikan Minikube saat selesai belajar (status tersimpan)
+minikube stop
+
+# Jalankan kembali kapan saja dengan:
+minikube start
+
+# Hapus cluster sepenuhnya jika ingin membersihkan resource:
+minikube delete
+```
+
+### B. Jika Pakai GKE (Hemat Credit GCP)
+```bash
+# Hapus cluster agar tidak ditagih terus menerus ($3-5 per hari!)
 gcloud container clusters delete taskmanager-cluster \
   --region=asia-southeast2 \
   --quiet
-
-# Buat ulang saat mau belajar lagi
-gcloud container clusters create-auto taskmanager-cluster \
-  --region=asia-southeast2
 ```
-
-> 🔴 **PENTING**: Selalu matikan cluster saat selesai belajar!
-> Trial credit $300 bisa habis dalam 2 bulan kalau cluster nyala terus 24/7.
-> Dengan mematikan cluster saat tidak dipakai, credit bisa bertahan 3-6 bulan.
 
 ---
 
 ## Checklist ✅
 
-- [x] `gcloud auth login` berhasil
-- [x] Project di-set dengan `gcloud config set project`
-- [x] APIs diaktifkan (container, artifactregistry)
-- [x] Artifact Registry repository dibuat
-- [x] GKE cluster dibuat dan running
-- [x] `kubectl get nodes` menampilkan nodes
-- [x] Paham cara matikan cluster untuk hemat credit
+- [ ] Driver Containerization (Docker) sudah berjalan.
+- [ ] Salah satu cluster siap (`minikube status` atau `gcloud container clusters list`).
+- [ ] `kubectl get nodes` berhasil menampilkan minimal 1 node berstatus `Ready`.
 
 ---
 

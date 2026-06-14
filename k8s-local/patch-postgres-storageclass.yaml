@@ -1,0 +1,5 @@
+# GKE pakai "standard-rwo" (Google Persistent Disk). Minikube tidak punya itu.
+# "standard" = StorageClass default minikube (provisioner hostpath).
+- op: replace
+  path: /spec/volumeClaimTemplates/0/spec/storageClassName
+  value: standard

@@ -58,10 +58,8 @@ Tutorial step-by-step dari nol, tersedia di folder `docs/`:
 
 ### Prerequisites
 
-- Docker Desktop
-- kubectl
-- gcloud CLI
-- GCP account (trial credit OK!)
+**Untuk lokal (minikube):** Docker + kubectl + minikube — itu saja, gratis.
+**Untuk GKE (cloud):** Docker + kubectl + gcloud CLI + GCP account (trial credit OK!).
 
 ### Local Development (Docker Compose)
 
@@ -76,6 +74,36 @@ docker compose up --build
 # Frontend: http://localhost:8080
 # Backend:  http://localhost:3000
 # Swagger:  http://localhost:3000/swagger-ui/
+```
+
+### Local Kubernetes (minikube) — gratis, tanpa GCP
+
+Untuk belajar K8s di laptop tanpa biaya cloud. Pakai overlay `k8s-local/`
+(detail & troubleshooting: [k8s-local/README.md](k8s-local/README.md)).
+
+```bash
+# 1. Start cluster + addon
+minikube start --cpus=4 --memory=6144 --driver=docker
+minikube addons enable ingress
+minikube addons enable metrics-server
+
+# 2. Build image di dalam Docker minikube (tanpa registry)
+eval $(minikube docker-env)
+docker build -t taskmanager/backend:local  ./backend
+docker build -t taskmanager/frontend:local ./frontend
+eval $(minikube docker-env -u)
+
+# 3. Deploy overlay lokal
+kubectl kustomize k8s-local --load-restrictor=LoadRestrictionsNone | kubectl apply -f -
+
+# 4. Tunggu pod Running, lalu akses
+kubectl get pods -n taskmanager -w
+echo "$(minikube ip) taskmanager.local" | sudo tee -a /etc/hosts
+# buka http://taskmanager.local
+
+# Bersih-bersih
+minikube stop          # matikan cluster
+# minikube delete      # hapus total
 ```
 
 ### Deploy ke GKE
@@ -127,6 +155,9 @@ learn-kubernetes-real-project/
 │   ├── ingress.yaml
 │   ├── hpa.yaml
 │   └── network-policy.yaml
+├── k8s-local/                      # Overlay Kustomize untuk minikube (lokal)
+│   ├── kustomization.yaml
+│   └── patch-*.yaml
 ├── .github/workflows/
 │   └── deploy.yml                  # CI/CD pipeline
 └── docs/                           # Tutorial (Bahasa Indonesia)

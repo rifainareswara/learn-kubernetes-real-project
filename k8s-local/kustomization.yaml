@@ -1,0 +1,65 @@
+# =============================================================================
+# Overlay LOKAL (minikube) — Kustomize
+# =============================================================================
+# Tujuan: menjalankan project ini di minikube TANPA mengubah folder k8s/ asli
+# (k8s/ tetap dipakai untuk deploy ke GKE).
+#
+# Yang ditimpa overlay ini:
+#   1. image  → image lokal (taskmanager/backend:local, taskmanager/frontend:local)
+#   2. imagePullPolicy: Always → IfNotPresent  (supaya tidak coba pull dari registry)
+#   3. StorageClass postgres: standard-rwo (GKE) → standard (default minikube)
+#   4. Ingress: class "gce" → "nginx" + host taskmanager.local
+#
+# Jalankan:  kubectl apply -k k8s-local/
+# Lihat:     kubectl get all -n taskmanager
+# =============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# ── Base: semua manifest asli di k8s/ ───────────────────────────────────────
+resources:
+  - ../k8s/01-namespace.yaml
+  - ../k8s/02-configmap.yaml
+  - ../k8s/03-secret.yaml
+  - ../k8s/04-network-policy.yaml
+  - ../k8s/05-postgres-statefulset.yaml
+  - ../k8s/06-postgres-service.yaml
+  - ../k8s/07-backend-deployment.yaml
+  - ../k8s/08-backend-service.yaml
+  - ../k8s/09-frontend-deployment.yaml
+  - ../k8s/10-frontend-service.yaml
+  - ../k8s/11-ingress.yaml
+  - ../k8s/12-hpa.yaml
+
+# ── Ganti nama+tag image ke image lokal (hasil build di minikube) ────────────
+images:
+  - name: asia-southeast2-docker.pkg.dev/capable-hash-452806-a0/taskmanager/backend
+    newName: taskmanager/backend
+    newTag: local
+  - name: asia-southeast2-docker.pkg.dev/capable-hash-452806-a0/taskmanager/frontend
+    newName: taskmanager/frontend
+    newTag: local
+
+# ── Patches lokal ────────────────────────────────────────────────────────────
+patches:
+  # imagePullPolicy: Always → IfNotPresent (backend & frontend)
+  - path: patch-image-pull-policy.yaml
+    target:
+      kind: Deployment
+      name: backend
+  - path: patch-image-pull-policy.yaml
+    target:
+      kind: Deployment
+      name: frontend
+
+  # StorageClass GKE → default minikube
+  - path: patch-postgres-storageclass.yaml
+    target:
+      kind: StatefulSet
+      name: postgres
+
+  # Ingress GKE → nginx + host lokal
+  - path: patch-ingress.yaml
+    target:
+      kind: Ingress
+      name: taskmanager-ingress

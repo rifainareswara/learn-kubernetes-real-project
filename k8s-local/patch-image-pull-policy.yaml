@@ -1,0 +1,5 @@
+# Image dibangun lokal & tidak ada di registry mana pun, jadi JANGAN coba di-pull.
+# IfNotPresent = pakai image yang sudah ada di node (hasil `docker build` di minikube).
+- op: replace
+  path: /spec/template/spec/containers/0/imagePullPolicy
+  value: IfNotPresent
